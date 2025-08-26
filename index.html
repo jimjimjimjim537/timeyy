@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Timey ⏱️</title>
+  <meta name="theme-color" content="#111827" />
+  <meta name="description" content="Timey – moderne stopwatch & timer met veel animaties" />
+  <link rel="manifest" href="manifest.json">
+  <style>
+    :root{
+      --bg: radial-gradient(1200px 800px at 10% 10%, #1f2937 0%, #0b1020 45%, #060913 100%);
+      --grad: conic-gradient(from 180deg at 50% 50%, #8b5cf6, #06b6d4, #22c55e, #f59e0b, #ef4444, #8b5cf6);
+      --glass: rgba(255,255,255,.06);
+      --glassBorder: rgba(255,255,255,.12);
+      --textPrimary: #e5e7eb;
+      --textMuted: #9ca3af;
+      --accent: #8b5cf6;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; color:var(--textPrimary); font:16px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Cantarell, Noto Sans, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: var(--bg);
+      overflow-x:hidden;
+    }
+    /* Animated backdrop */
+    .blobs{position:fixed; inset:0; overflow:hidden; pointer-events:none; filter: blur(60px); opacity:.6}
+    .blob{position:absolute; width:45vmax; height:45vmax; border-radius:9999px; background:radial-gradient(circle at 30% 30%, rgba(139,92,246,.9), rgba(59,130,246,.2) 60%, transparent 70%); mix-blend-mode: screen; animation: float 22s ease-in-out infinite}
+    .blob.b2{left:60%; top:10%; background:radial-gradient(circle at 70% 70%, rgba(34,197,94,.9), rgba(6,182,212,.2) 60%, transparent 70%); animation-duration: 26s}
+    .blob.b3{left:10%; top:60%; background:radial-gradient(circle at 30% 70%, rgba(245,158,11,.9), rgba(239,68,68,.25) 60%, transparent 70%); animation-duration: 28s}
+    @keyframes float{0%,100%{transform:translate3d(0,0,0) scale(1)} 50%{transform:translate3d(-10%,5%,0) scale(1.08)}}
+
+    header{
+      position:sticky; top:0; z-index:40; backdrop-filter:saturate(150%) blur(14px);
+      background:linear-gradient(180deg, rgba(16,23,42,.8), rgba(16,23,42,.5) 80%, transparent);
+      border-bottom:1px solid var(--glassBorder);
+    }
+    .container{max-width:900px; margin:0 auto; padding:16px}
+    .brand{display:flex; align-items:center; gap:12px; font-weight:800; letter-spacing:.5px}
+    .logo{width:40px; height:40px; border-radius:14px; background:var(--grad); position:relative; box-shadow:0 10px 30px rgba(139,92,246,.35)}
+    .logo::after{content:""; position:absolute; inset:4px; border-radius:10px; background:rgba(255,255,255,.1); backdrop-filter: blur(2px)}
+    .glow{position:absolute; inset:-20px; background:radial-gradient(closest-side, rgba(139,92,246,.5), transparent); filter: blur(20px); opacity:.7; animation:pulse 2.2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{transform:scale(1)} 50%{transform:scale(1.06)}}
+
+    .tabs{display:flex; gap:10px; padding:12px; background:linear-gradient(130deg, rgba(255,255,255,.07), rgba(255,255,255,.02)); border:1px solid var(--glassBorder); border-radius:18px; width:max-content; box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 10px 40px rgba(0,0,0,.2)}
+    .tab{background:transparent; color:var(--textMuted); border:none; padding:10px 18px; border-radius:12px; cursor:pointer; transition: all .35s ease; font-weight:700}
+    .tab.active{color:#fff; background:linear-gradient(120deg, rgba(139,92,246,.35), rgba(6,182,212,.35)); box-shadow:0 6px 25px rgba(139,92,246,.35)}
+
+    .card{position:relative; margin:24px auto; border-radius:24px; padding:24px; background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border:1px solid var(--glassBorder); box-shadow: 0 20px 60px rgba(0,0,0,.35)}
+
+    .display{display:grid; place-items:center; padding:24px 14px}
+    .time{font-variant-numeric:tabular-nums; font-weight:800; letter-spacing:1px; font-size: clamp(44px, 9vw, 80px); text-shadow:0 10px 30px rgba(0,0,0,.5)}
+
+    .ring{--size:min(70vmin, 420px); width:var(--size); height:var(--size); border-radius:9999px; display:grid; place-items:center; position:relative; isolation:isolate}
+    .ring::before{content:""; position:absolute; inset:0; border-radius:inherit; padding:3px; background:var(--grad); -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; animation: rotate 16s linear infinite}
+    .ring::after{content:""; position:absolute; inset:18px; border-radius:inherit; background: linear-gradient(180deg, rgba(0,0,0,.25), rgba(255,255,255,.06)); border:1px solid var(--glassBorder); filter: blur(.2px)}
+    @keyframes rotate{to{transform: rotate(1turn)}}
+
+    .controls{display:flex; gap:12px; flex-wrap:wrap; justify-content:center; padding:6px}
+    .btn{border:none; padding:12px 18px; border-radius:14px; font-weight:800; letter-spacing:.3px; cursor:pointer; backdrop-filter: blur(8px); color:#fff; background:linear-gradient(120deg, rgba(139,92,246,.35), rgba(6,182,212,.35)); border:1px solid var(--glassBorder); transition:.25s transform, .25s box-shadow; box-shadow:0 12px 30px rgba(6,182,212,.2)}
+    .btn:hover{transform:translateY(-2px)}
+    .btn:active{transform:translateY(1px) scale(.99)}
+    .btn.secondary{background:linear-gradient(120deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); color:var(--textPrimary)}
+    .btn.danger{background:linear-gradient(120deg, rgba(239,68,68,.5), rgba(245,158,11,.4))}
+
+    .chips{display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:14px 0}
+    .chip{padding:8px 12px; border-radius:999px; border:1px solid var(--glassBorder); background:rgba(255,255,255,.04); color:var(--textMuted); cursor:pointer; transition:.25s; font-weight:700}
+    .chip:hover{color:#fff; transform:translateY(-1px)}
+
+    .inputs{display:flex; align-items:center; gap:10px; justify-content:center; margin:6px 0 16px}
+    .num{width:80px; text-align:center; padding:10px 12px; border-radius:12px; border:1px solid var(--glassBorder); background:rgba(0,0,0,.3); color:#fff; font-weight:800; font-size:20px; outline:none; transition:border-color .2s}
+    .num:focus{border-color:#8b5cf6}
+    .sep{opacity:.5; font-weight:800}
+
+    .list{max-height:220px; overflow:auto; padding-right:6px; margin-top:10px}
+    .lap{display:flex; align-items:center; justify-content:space-between; padding:10px 14px; margin:8px 0; border:1px solid var(--glassBorder); background:rgba(255,255,255,.04); border-radius:12px; animation: pop .28s ease-out}
+    @keyframes pop{from{transform:scale(.96); opacity:0} to{transform:scale(1); opacity:1}}
+
+    .progress{--pct:0; position:absolute; inset:0; border-radius:inherit; background: conic-gradient(#8b5cf6 var(--pct), rgba(255,255,255,.06) 0); mask:radial-gradient(circle 46% at 50% 50%, transparent 98%, #000 100%)}
+
+    .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px); background:rgba(0,0,0,.7); border:1px solid var(--glassBorder); padding:10px 14px; border-radius:12px; opacity:0; transition:.35s; z-index:50}
+    .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+    .sparkle{position:absolute; width:6px; height:6px; border-radius:999px; background:currentColor; filter: blur(.3px); animation: rise .9s ease-out forwards}
+    @keyframes rise{from{opacity:.9; transform: translateY(0) scale(1)} to{opacity:0; transform: translateY(-24px) scale(1.8)}}
+
+    footer{opacity:.7; text-align:center; padding:24px 10px}
+    a{color:#93c5fd}
+  </style>
+</head>
+<body>
+  <div class="blobs" aria-hidden="true">
+    <div class="blob"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+  </div>
+
+  <header>
+    <div class="container" style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
+      <div class="brand">
+        <div class="logo"><span class="glow"></span></div>
+        <div>
+          <div style="font-size:18px">Timey</div>
+          <div style="font-size:12px; color:var(--textMuted); font-weight:600">Timer • Stopwatch</div>
+        </div>
+      </div>
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="stopwatch" role="tab">Stopwatch</button>
+        <button class="tab" data-tab="timer" role="tab">Timer</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="stopwatch" class="card" role="tabpanel" aria-labelledby="stopwatch-tab">
+      <div class="display">
+        <div class="ring">
+          <div class="progress" id="swProgress" style="--pct: 0deg"></div>
+          <div class="time" id="swTime">00:00.00</div>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn" id="swStart">Start</button>
+        <button class="btn secondary" id="swLap" disabled>Ronde</button>
+        <button class="btn danger" id="swReset" disabled>Reset</button>
+      </div>
+      <div class="list" id="swLaps" aria-live="polite"></div>
+    </section>
+
+    <section id="timer" class="card" role="tabpanel" aria-labelledby="timer-tab" hidden>
+      <div class="display">
+        <div class="ring">
+          <div class="progress" id="tmProgress" style="--pct: 0deg"></div>
+          <div class="time" id="tmTime">00:00</div>
+        </div>
+      </div>
+      <div class="chips">
+        <button class="chip" data-preset="30">30s</button>
+        <button class="chip" data-preset="60">1m</button>
+        <button class="chip" data-preset="300">5m</button>
+        <button class="chip" data-preset="900">15m</button>
+      </div>
+      <div class="inputs">
+        <input class="num" id="min" type="number" min="0" max="999" value="0" aria-label="Minuten">
+        <span class="sep">:</span>
+        <input class="num" id="sec" type="number" min="0" max="59" value="30" aria-label="Seconden">
+      </div>
+      <div class="controls">
+        <button class="btn" id="tmStart">Start</button>
+        <button class="btn secondary" id="tmPause" disabled>Pauze</button>
+        <button class="btn danger" id="tmReset" disabled>Reset</button>
+      </div>
+    </section>
+
+    <div class="card" style="text-align:center">
+      <div style="font-weight:700; margin-bottom:8px">PWA & Play Store</div>
+      <div style="color:var(--textMuted); margin-bottom:12px">Maak automatisch de bestanden voor installatie (manifest + service worker + iconen).</div>
+      <button class="btn" id="exportPWA">Exporteer PWA-bestanden</button>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <footer>
+    Gemaakt met ❤ voor animaties. <a href="#" id="install">Installeren</a>
+  </footer>
+
+  <script>
+    // ---------- Helpers ----------
+    const fmt = (ms) => {
+      const m = Math.floor(ms/60000);
+      const s = Math.floor((ms%60000)/1000);
+      const cs = Math.floor((ms%1000)/10);
+      return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;
+    };
+    const fmtMMSS = (ms) => {
+      const m = Math.floor(ms/60000);
+      const s = Math.floor((ms%60000)/1000);
+      return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+    const toast = (msg) => {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(()=> t.classList.remove('show'), 1800);
+    }
+    const spark = (el, color) => {
+      for (let i=0; i<12; i++) {
+        const s = document.createElement('span');
+        s.className='sparkle';
+        s.style.color = color || '#8b5cf6';
+        s.style.left = (50 + (Math.random()*40-20))+'%';
+        s.style.top = (50 + (Math.random()*40-20))+'%';
+        el.appendChild(s);
+        setTimeout(()=> s.remove(), 900);
+      }
+    }
+
+    // ---------- Tabs ----------
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(btn=>btn.addEventListener('click', ()=>{
+      tabs.forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('main section').forEach(s=>s.hidden=true);
+      document.getElementById(btn.dataset.tab).hidden=false;
+    }));
+
+    // ---------- Stopwatch ----------
+    let swRunning = false, swStart=0, swElapsed=0, swRAF, lapN=1;
+    const swTime = document.getElementById('swTime');
+    const swProgress = document.getElementById('swProgress');
+    const swStartBtn = document.getElementById('swStart');
+    const swLapBtn = document.getElementById('swLap');
+    const swResetBtn = document.getElementById('swReset');
+    const swLaps = document.getElementById('swLaps');
+
+    function swTick(){
+      const now = performance.now();
+      const t = swElapsed + (now - swStart);
+      swTime.textContent = fmt(t);
+      const deg = (t % 60000) / 60000 * 360; // progress around ring per minute
+      swProgress.style.setProperty('--pct', deg+'deg');
+      swRAF = requestAnimationFrame(swTick);
+    }
+
+    swStartBtn.addEventListener('click', ()=>{
+      if(!swRunning){
+        swRunning = true; swStart = performance.now();
+        swStartBtn.textContent='Pauze'; swLapBtn.disabled=false; swResetBtn.disabled=false;
+        swRAF = requestAnimationFrame(swTick);
+        spark(document.querySelector('#stopwatch .ring'), '#06b6d4');
+      } else {
+        swRunning = false; cancelAnimationFrame(swRAF);
+        swElapsed += performance.now()-swStart;
+        swStartBtn.textContent='Verder';
+      }
+    });
+    swLapBtn.addEventListener('click', ()=>{
+      const t = swRunning ? swElapsed + (performance.now()-swStart) : swElapsed;
+      const div = document.createElement('div');
+      div.className='lap';
+      div.innerHTML = `<span style="opacity:.7">Ronde ${String(lapN++).padStart(2,'0')}</span><strong>${fmt(t)}</strong>`;
+      swLaps.prepend(div);
+    });
+    swResetBtn.addEventListener('click', ()=>{
+      swRunning=false; cancelAnimationFrame(swRAF); swElapsed=0; swTime.textContent='00:00.00'; swStartBtn.textContent='Start'; swLapBtn.disabled=true; swResetBtn.disabled=true; swLaps.innerHTML='';
+      toast('Stopwatch gereset');
+    });
+
+    // ---------- Timer ----------
+    let tmRunning=false, tmEnd=0, tmTotal=0, tmRAF;
+    const tmTime = document.getElementById('tmTime');
+    const tmProgress = document.getElementById('tmProgress');
+    const min = document.getElementById('min');
+    const sec = document.getElementById('sec');
+    const tmStartBtn = document.getElementById('tmStart');
+    const tmPauseBtn = document.getElementById('tmPause');
+    const tmResetBtn = document.getElementById('tmReset');
+
+    function tmTick(){
+      const left = Math.max(0, tmEnd - Date.now());
+      const pct = tmTotal ? (1 - left / tmTotal) : 0;
+      tmProgress.style.setProperty('--pct', (pct*360)+'deg');
+      tmTime.textContent = fmtMMSS(left);
+      if(left<=0){
+        tmFinish(); return;
+      }
+      tmRAF = requestAnimationFrame(tmTick);
+    }
+
+    function tmFinish(){
+      tmRunning=false; cancelAnimationFrame(tmRAF);
+      tmStartBtn.disabled=false; tmPauseBtn.disabled=true; tmResetBtn.disabled=false; tmStartBtn.textContent='Start';
+      tmTime.textContent='00:00';
+      toast('Tijd om!');
+      const ring = document.querySelector('#timer .ring');
+      spark(ring, '#ef4444');
+      if('vibrate' in navigator) navigator.vibrate([200,100,200,100,400]);
+      try{new AudioContext().close()}catch{}
+      // Optional: Notification
+      if(Notification && Notification.permission==='granted') new Notification('Timey', { body: 'Timer klaar ⏰' });
+    }
+
+    function startTimer(ms){
+      tmTotal = ms; tmEnd = Date.now()+ms; tmRunning=true;
+      cancelAnimationFrame(tmRAF); tmTick();
+      tmStartBtn.textContent='Herstart'; tmPauseBtn.disabled=false; tmResetBtn.disabled=false;
+    }
+
+    tmStartBtn.addEventListener('click', ()=>{
+      const m = Math.max(0, parseInt(min.value||'0',10));
+      const s = Math.max(0, Math.min(59, parseInt(sec.value||'0',10)));
+      const ms = (m*60 + s) * 1000;
+      if(ms<=0){ toast('Kies tijd > 0'); return; }
+      startTimer(ms);
+      localStorage.setItem('timey:last', String(ms));
+    });
+
+    tmPauseBtn.addEventListener('click', ()=>{
+      if(!tmRunning) return;
+      const left = tmEnd - Date.now();
+      tmRunning=false; cancelAnimationFrame(tmRAF);
+      tmStartBtn.disabled=false; tmPauseBtn.disabled=true; tmStartBtn.textContent='Verder';
+      tmStartBtn.onclick = ()=>{ tmStartBtn.onclick=null; startTimer(left); };
+    });
+
+    tmResetBtn.addEventListener('click', ()=>{
+      tmRunning=false; cancelAnimationFrame(tmRAF); tmTotal=0; tmProgress.style.setProperty('--pct','0deg');
+      tmTime.textContent='00:00'; tmStartBtn.disabled=false; tmPauseBtn.disabled=true; tmResetBtn.disabled=true; tmStartBtn.textContent='Start';
+    });
+
+    document.querySelectorAll('.chip').forEach(c=> c.addEventListener('click', ()=>{
+      const ms = parseInt(c.dataset.preset,10)*1000; startTimer(ms);
+      const m = Math.floor(ms/60000), s = Math.floor((ms%60000)/1000); min.value=m; sec.value=s;
+      localStorage.setItem('timey:last', String(ms));
+    }));
+
+    // Restore last preset
+    const last = parseInt(localStorage.getItem('timey:last')||'0',10);
+    if(last>0){ min.value=Math.floor(last/60000); sec.value=Math.floor((last%60000)/1000); }
+
+    // ---------- Install prompt ----------
+    let deferredPrompt; window.addEventListener('beforeinstallprompt', (e)=>{ e.preventDefault(); deferredPrompt=e; document.getElementById('install').onclick= async ()=>{ deferredPrompt?.prompt(); deferredPrompt=null; }});
+
+    // ---------- PWA export (manifest + SW + icons) ----------
+    const save = (name, content) => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([content], {type: 'text/plain'}));
+      a.download = name; a.click(); URL.revokeObjectURL(a.href);
+    };
+    const makeIcon = async (size) => {
+      const c = document.createElement('canvas'); c.width=c.height=size; const x=c.getContext('2d');
+      const g=x.createConicGradient(Math.PI, size/2, size/2); ['#8b5cf6','#06b6d4','#22c55e','#f59e0b','#ef4444','#8b5cf6'].forEach((col,i)=>g.addColorStop(i/5,col));
+      x.fillStyle=g; x.fillRect(0,0,size,size);
+      x.fillStyle='rgba(255,255,255,.18)'; x.fillRect(size*.08,size*.08,size*.84,size*.84);
+      x.fillStyle='#fff'; x.font = `${Math.floor(size*.46)}px system-ui`;
+      x.textAlign='center'; x.textBaseline='middle'; x.fillText('⏱️', size/2, size/2+size*.02);
+      return await new Promise(r=>c.toBlob(b=>r(b),'image/png'));
+    };
+
+    document.getElementById('exportPWA').addEventListener('click', async ()=>{
+      const icons=[192,512];
+      const manifest = {
+        name: 'Timey', short_name: 'Timey',
+        description: 'Moderne timer & stopwatch (PWA).',
+        start_url: '.', display:'standalone', background_color:'#0b1020', theme_color:'#111827',
+        icons: await Promise.all(icons.map(async s=>({src:`icons/icon-${s}.png`, sizes:`${s}x${s}`, type:'image/png', purpose:'any maskable'})))
+      };
+      // Save manifest.json
+      save('manifest.json', JSON.stringify(manifest,null,2));
+      // Create icons zip-ish by saving individually
+      for(const s of icons){ const blob = await makeIcon(s); const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`icons/icon-${s}.png`; a.click(); URL.revokeObjectURL(a.href); }
+      // Save service worker
+      const sw = `self.addEventListener('install',e=>{ self.skipWaiting(); e.waitUntil(caches.open('timey-v1').then(c=>c.addAll(['./','./index.html','./manifest.json'])))});
+self.addEventListener('activate',e=>{ clients.claim(); });
+self.addEventListener('fetch',e=>{ e.respondWith(caches.match(e.request).then(r=> r || fetch(e.request))) });`;
+      save('sw.js', sw);
+      toast('Bestanden gedownload: manifest, icons & sw');
+    });
+
+    // Register SW if present on your host
+    if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+  </script>
+</body>
+</html>
